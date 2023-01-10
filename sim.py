@@ -3,10 +3,12 @@ from fractions import Fraction
 from typing import Union
 
 @dataclass
+class Variable:
+    value: float
+
+@dataclass
 class NumLiteral:
-    value: Fraction
-    def __init__(self, *args):
-        self.value = Fraction(*args)
+    value: float
 
 @dataclass
 class BinOp:
@@ -16,12 +18,11 @@ class BinOp:
 
 AST = NumLiteral | BinOp
 
-Value = Fraction
 
 class InvalidProgram(Exception):
     pass
 
-def eval(program: AST) -> Value:
+def eval(program: AST):
     match program:
         case NumLiteral(value):
             return value
@@ -33,7 +34,17 @@ def eval(program: AST) -> Value:
             return eval(left) * eval(right)
         case BinOp("/", left, right):
             return eval(left) / eval(right)
+        case BinOp("=", left, right):
+            x = eval(right)
+            if isinstance(left, Variable) and isinstance(x,float):
+                program.left.value = x
+                return True
+            else :
+                raise InvalidProgram()
+                
+            
     raise InvalidProgram()
+
 
 def test_eval():
     e1 = NumLiteral(2)
@@ -43,4 +54,10 @@ def test_eval():
     e5 = BinOp("+", e2, e3)
     e6 = BinOp("/", e5, e4)
     e7 = BinOp("*", e1, e6)
-    assert eval(e7) == Fraction(32, 5)
+    e8 = Variable(0)
+    e9 = BinOp("=",e8,e7)
+    eval(e9)
+    print(e8.value)
+
+    
+test_eval()
