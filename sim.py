@@ -15,9 +15,19 @@ class BinOp:
     operator: str
     left: 'AST'
     right: 'AST'
+    
+@dataclass
+class IfElse:
+    condition : 'AST'
+    whentrue : 'AST'
+    whenfalse : 'AST'
 
-AST = NumLiteral | BinOp
+AST = NumLiteral | BinOp | Variable | IfElse
 
+
+    
+
+    
 
 class InvalidProgram(Exception):
     pass
@@ -25,7 +35,7 @@ class InvalidProgram(Exception):
 def eval(program: AST):
     match program:
         case NumLiteral(value) | Variable(value) :
-            return value
+            return float(value)
         case BinOp("+", left, right):
             return eval(left) + eval(right)
         case BinOp("-", left, right):
@@ -36,9 +46,12 @@ def eval(program: AST):
             return eval(left) / eval(right)
         case BinOp("=", left, right):
             x = eval(right)
-            if isinstance(left, Variable) and isinstance(x,float):
+            print(type(x))
+            if isinstance(left, Variable) and (isinstance(x,float)):
+                if isinstance(x,NumLiteral): x=x.value
                 program.left.value = x
-                return 1
+                print("equal assignment completed")
+                return 1.0
             else :
                 raise InvalidProgram()
         case BinOp(">", left, right) | BinOp("<", left, right) | BinOp("==", left, right):
@@ -46,8 +59,9 @@ def eval(program: AST):
             y = eval(left)
             if isinstance(x,Variable):
                 x= x.value
-            if isinstance(x,Variable):
-                x= x.value
+            if isinstance(y,Variable):
+                y= y.value
+            print("condition completed")
             match program.operator :
                 case ">":
                     return float(int(x>y))
@@ -55,24 +69,24 @@ def eval(program: AST):
                     return float(int(x<y))
                 case "==":
                     return float(int(x==y))
-                
+        case IfElse(condition,whentrue, whenfalse):
+            x= eval(condition)
+            if x==0:
+                eval(program.whenfalse)
+                return 
+            else:
+                eval(program.whentrue)
+                return 
             
     raise InvalidProgram()
 
 
 def test_eval():
-    e1 = NumLiteral(2)
-    e2 = NumLiteral(7)
-    e3 = NumLiteral(9)
-    e4 = NumLiteral(5)
-    e5 = BinOp("+", e2, e3)
-    e6 = BinOp("/", e5, e4)
-    e7 = BinOp("*", e1, e6)
-    e8 = Variable(0)
-    e9 = BinOp("=",e8,e7)
-    eval(e9)
-    e10 = Variable(6.4)
-    e11 = BinOp("==",e10,e8)
-    print(eval(e11))
+    a = Variable(0)
+    e2 = BinOp("=",a,NumLiteral(2))
+    e3 = BinOp("=",a,NumLiteral(1))
+    e1 = IfElse(BinOp("<",NumLiteral(1),NumLiteral(2)),e2,e3)
+    eval(e1)
+    print(a.value)
     
 test_eval()
