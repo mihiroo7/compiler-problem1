@@ -24,7 +24,7 @@ class InvalidProgram(Exception):
 
 def eval(program: AST):
     match program:
-        case NumLiteral(value):
+        case NumLiteral(value) | Variable(value) :
             return value
         case BinOp("+", left, right):
             return eval(left) + eval(right)
@@ -38,9 +38,23 @@ def eval(program: AST):
             x = eval(right)
             if isinstance(left, Variable) and isinstance(x,float):
                 program.left.value = x
-                return True
+                return 1
             else :
                 raise InvalidProgram()
+        case BinOp(">", left, right) | BinOp("<", left, right) | BinOp("==", left, right):
+            x = eval(right)
+            y = eval(left)
+            if isinstance(x,Variable):
+                x= x.value
+            if isinstance(x,Variable):
+                x= x.value
+            match program.operator :
+                case ">":
+                    return float(int(x>y))
+                case "<":
+                    return float(int(x<y))
+                case "==":
+                    return float(int(x==y))
                 
             
     raise InvalidProgram()
@@ -57,7 +71,8 @@ def test_eval():
     e8 = Variable(0)
     e9 = BinOp("=",e8,e7)
     eval(e9)
-    print(e8.value)
-
+    e10 = Variable(6.4)
+    e11 = BinOp("==",e10,e8)
+    print(eval(e11))
     
 test_eval()
