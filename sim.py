@@ -23,8 +23,18 @@ class Let:
     variable : Variable
     e1 : 'AST'
     e2 : 'AST'
+    
+@dataclass
+class Boolean:
+    value : bool
+    
+@dataclass
+class IfEl:
+    exp: 'AST'
+    ifstate : 'AST'
+    elsestate : 'AST'
 
-AST = NumLiteral | BinOp | Variable | Let
+AST = NumLiteral | BinOp | Variable | Let | Boolean
 
 Value = Fraction
 
@@ -33,7 +43,7 @@ class InvalidProgram(Exception):
 
 def eval(program: AST, envi : dict):
     match program:
-        case NumLiteral(value):
+        case NumLiteral(value) | Boolean(value):
             return value
         case BinOp("+", left, right):
             return eval(left,envi) + eval(right,envi)
@@ -51,6 +61,24 @@ def eval(program: AST, envi : dict):
             x = eval(e1,envi)
             envi[variable.name] = eval(e2,envi | {variable.name : x})
             return envi[variable.name]
+        case BinOp("<",left,right):
+            x = eval(left,envi)
+            y = eval(right,envi)
+            return x<y
+        case BinOp(">",left,right):
+            x = eval(left,envi)
+            y = eval(right,envi)
+            return x>y
+        case BinOp("==",left,right):
+            x = eval(left,envi)
+            y = eval(right,envi)
+            return x<y
+        case IfEl(exp,ifstate,elsestate):
+            if(eval(exp,envi)):
+                return eval(ifstate,envi)
+            else:
+                return eval(elsestate,envi)
+            
             
     raise InvalidProgram()
 
@@ -58,8 +86,12 @@ def test_eval():
     x = Variable("x")
     e1 = NumLiteral(5)
     e2 = BinOp("*",Variable("x"),NumLiteral(2))
-    e1 = Let(x,e1,e2)
-    print(eval(e1,{}))
+    e3 = Let(x,e1,e2)
+    e4 = BinOp("<",NumLiteral(4),NumLiteral(3))
+    e5 = BinOp("*",Variable("x"),NumLiteral(3))
+    e6 = Let(x,e1,e5)
+    e7 = IfEl(e4,e3,e6)
+    print(eval(e7,{}))
     
 test_eval()
     
