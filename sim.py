@@ -3,12 +3,10 @@ from fractions import Fraction
 from typing import Union
 
 @dataclass
-class Variable:
-    value: float
-
-@dataclass
 class NumLiteral:
-    value: float
+    value: Fraction
+    def __init__(self, *args):
+        self.value = Fraction(*args)
 
 @dataclass
 class BinOp:
@@ -17,76 +15,51 @@ class BinOp:
     right: 'AST'
     
 @dataclass
-class IfElse:
-    condition : 'AST'
-    whentrue : 'AST'
-    whenfalse : 'AST'
-
-AST = NumLiteral | BinOp | Variable | IfElse
-
-
+class Variable:
+    name : str
     
+@dataclass
+class Let:
+    variable : Variable
+    e1 : 'AST'
+    e2 : 'AST'
 
-    
+AST = NumLiteral | BinOp | Variable | Let
+
+Value = Fraction
 
 class InvalidProgram(Exception):
     pass
 
-def eval(program: AST):
+def eval(program: AST, envi : dict):
     match program:
-        case NumLiteral(value) | Variable(value) :
-            return float(value)
+        case NumLiteral(value):
+            return value
         case BinOp("+", left, right):
-            return eval(left) + eval(right)
+            return eval(left,envi) + eval(right,envi)
         case BinOp("-", left, right):
-            return eval(left) - eval(right)
+            return eval(left,envi) - eval(right, envi)
         case BinOp("*", left, right):
-            return eval(left) * eval(right)
+            return eval(left, envi) * eval(right, envi)
         case BinOp("/", left, right):
-            return eval(left) / eval(right)
-        case BinOp("=", left, right):
-            x = eval(right)
-            print(type(x))
-            if isinstance(left, Variable) and (isinstance(x,float)):
-                if isinstance(x,NumLiteral): x=x.value
-                program.left.value = x
-                print("equal assignment completed")
-                return 1.0
-            else :
-                raise InvalidProgram()
-        case BinOp(">", left, right) | BinOp("<", left, right) | BinOp("==", left, right):
-            x = eval(right)
-            y = eval(left)
-            if isinstance(x,Variable):
-                x= x.value
-            if isinstance(y,Variable):
-                y= y.value
-            print("condition completed")
-            match program.operator :
-                case ">":
-                    return float(int(x>y))
-                case "<":
-                    return float(int(x<y))
-                case "==":
-                    return float(int(x==y))
-        case IfElse(condition,whentrue, whenfalse):
-            x= eval(condition)
-            if x==0:
-                eval(program.whenfalse)
-                return 
-            else:
-                eval(program.whentrue)
-                return 
+            return eval(left, envi) / eval(right, envi)
+        case Variable(name):
+            if name in envi:
+                return envi[name]
+            InvalidProgram()
+        case Let(variable,e1,e2):
+            x = eval(e1,envi)
+            envi[variable.name] = eval(e2,envi | {variable.name : x})
+            return envi[variable.name]
             
     raise InvalidProgram()
 
-
 def test_eval():
-    a = Variable(0)
-    e2 = BinOp("=",a,NumLiteral(2))
-    e3 = BinOp("=",a,NumLiteral(1))
-    e1 = IfElse(BinOp("<",NumLiteral(1),NumLiteral(2)),e2,e3)
-    eval(e1)
-    print(a.value)
+    x = Variable("x")
+    e1 = NumLiteral(5)
+    e2 = BinOp("*",Variable("x"),NumLiteral(2))
+    e1 = Let(x,e1,e2)
+    print(eval(e1,{}))
     
 test_eval()
+    
